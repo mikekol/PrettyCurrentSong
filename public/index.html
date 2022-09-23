@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Example of the Implicit Grant flow with Spotify</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <style type="text/css">
+        #login,
+        #loggedin {
+            display: none;
+        }
+
+        .text-overflow {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: 500px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div id="login">
+            <h1>This is an example of the Implicit Grant flow</h1>
+            <button id="login-button" class="btn btn-primary">Log in with Spotify</button>
+        </div>
+        <div id="loggedin">
+            <div id="now-playing">
+            </div>
+            <div id="user-profile">
+            </div>
+            <div id="oauth">
+            </div>
+        </div>
+    </div>
+
+    <script id="user-profile-template" type="text/x-handlebars-template">
+      <h1>Logged in as {{display_name}}</h1>
+      <div class="media">
+        <div class="pull-left">
+          <img class="media-object" width="150" src="{{images.0.url}}" />
+        </div>
+        <div class="media-body">
+          <dl class="dl-horizontal">
+            <dt>Display name</dt><dd class="clearfix">{{display_name}}</dd>
+            <dt>Id</dt><dd>{{id}}</dd>
+            <dt>Email</dt><dd>{{email}}</dd>
+            <dt>Spotify URI</dt><dd><a href="{{external_urls.spotify}}">{{external_urls.spotify}}</a></dd>
+            <dt>Link</dt><dd><a href="{{href}}">{{href}}</a></dd>
+            <dt>Profile Image</dt><dd class="clearfix"><a href="{{images.0.url}}">{{images.0.url}}</a></dd>
+            <dt>Country</dt><dd>{{country}}</dd>
+          </dl>
+        </div>
+      </div>
+    </script>
+
+    <script id="now-playing-template" type="text/x-handlebars-template">
+      <div class="media">
+        <div class="pull-left">
+          <img class="media-object" width="64" src="{{item.album.images.2.url}}" />
+        </div>
+        <h4><b>Song:</b> <i>{{item.name}}</i><b> | Album:</b> <i>{{item.album.name }}</i><p><b>Artist(s):</b> <i>{{artists}}</i></h4>
+      </div>
+    </script>
+
+    <script id="oauth-template" type="text/x-handlebars-template">
+      <h2>oAuth info</h2>
+      <dl class="dl-horizontal">
+        <dt>Access token</dt><dd class="text-overflow">{{access_token}}</dd>
+      </dl>
+    </script>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script>
+        var stateKey = 'spotify_auth_state';
+        var duration = 0
+        var client_id = 'ec89600e478d4d8aa1a78e6a0a7e6097'; // Your client id
+        var client_secret = 'c565f920374a4ecaac3103bcb0d42f4f'; // Your secret
+        var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
+        var access_token = ''
+        var state = ''
+        var storedState = ''
+
+        //function doLogin() {
+
+        console.log('MAIN: Gotta log in!')
+
+        /**
+        * Generates a random string containing numbers and letters
+        * @param  {number} length The length of the string
+        * @return {string} The generated string
+        */
+        function generateRandomString(length) {
+            var text = '';
+            var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+            for (var i = 0; i < length; i++) {
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+            }
+            return text;
+        };
+
+        var state = generateRandomString(16);
+
+        console.log(`MAIN: setting state key to ${state}`)
+        localStorage.setItem(stateKey, state);
+        var scope = 'user-read-playback-state user-read-currently-playing';
+
+        var url = 'https://accounts.spotify.com/authorize';
+        url += '?response_type=token';
+        url += '&client_id=' + encodeURIComponent(client_id);
+        url += '&scope=' + encodeURIComponent(scope);
+        url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
+        url += '&state=' + encodeURIComponent(state);
+
+        console.log('MAIN: setting the window location')
+        window.location = url;
+    </script>
+
+</html>
