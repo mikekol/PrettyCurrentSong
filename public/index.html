@@ -73,12 +73,12 @@
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="./secrets.json" type="text/javascript"></script>
     <script>
-        var stateKey = 'spotify_auth_state';
+        var client_id = 'ec89600e478d4d8aa1a78e6a0a7e6097'
+        var stateKey = 'spotify_auth_state'
         var duration = 0
-        var client_id = 'ec89600e478d4d8aa1a78e6a0a7e6097'; // Your client id
-        var client_secret = 'c565f920374a4ecaac3103bcb0d42f4f'; // Your secret
-        var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
+        var redirect_uri = 'http://localhost:8888/callback' // Your redirect uri
         var access_token = ''
         var state = ''
         var storedState = ''

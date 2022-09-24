@@ -50,8 +50,6 @@
         var stateKey = 'spotify_auth_state';
         var durationModifierInMs = 4000
         var duration = 10000
-        var client_id = 'ec89600e478d4d8aa1a78e6a0a7e6097'; // Your client id
-        var client_secret = 'c565f920374a4ecaac3103bcb0d42f4f'; // Your secret
         var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
         var login_redirect_uri = 'http://localhost:8888';
         var access_token = ''
@@ -104,25 +102,31 @@
                             'Authorization': 'Bearer ' + access_token
                         },
                         success: function (response) {
-                            //userProfilePlaceholder.innerHTML = userProfileTemplate(response);
-                            // Get the artist names if there are multiple.
-                            let artists = ''
-                            for (let i = 0; i < response.item.artists.length; i++) {
-                                if (response.item.artists.length > 1) {
-                                    artists = `${artists}, ${response.item.artists[i].name}`
-                                    artists = artists.slice(1)
-                                } else {
-                                    artists = `${response.item.artists[i].name}`
+
+                            if (!!response && !!response.is_playing) {
+                                // Get the artist names if there are multiple.
+                                let artists = ''
+                                for (let i = 0; i < response.item.artists.length; i++) {
+                                    if (response.item.artists.length > 1) {
+                                        artists = `${artists}, ${response.item.artists[i].name}`
+                                        artists = artists.slice(1)
+                                    } else {
+                                        artists = `${response.item.artists[i].name}`
+                                    }
                                 }
+
+                                response.artists = artists
+                                duration = (response.item.duration_ms - response.progress_ms) + durationModifierInMs
+                                console.log(`CALLBACK: Looks like it's going to be ${duration}ms until the song changes`)
+
+                                nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
+                                console.log(`CALLBACK: Last second duration check is ${duration}ms`)
+                                intervalId = window.setInterval(() => { getSong() }, duration)
+                            } else {
+                                // what do we do here?
+                                console.log(`CALLBACK: Nothing is playing, or the player is offline.`)
+                                intervalId = window.setInterval(() => { getSong() }, duration)
                             }
-
-                            response.artists = artists
-                            duration = (response.item.duration_ms - response.progress_ms) + durationModifierInMs
-                            console.log(`CALLBACK: Looks like it's going to be ${duration}ms until the song changes`)
-
-                            nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
-                            console.log(`CALLBACK: Last second duration check is ${duration}ms`)
-                            intervalId = window.setInterval(() => { getSong() }, duration)
                         }
                     });
                 } else {
