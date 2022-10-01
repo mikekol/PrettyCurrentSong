@@ -137,11 +137,11 @@
                                 }
 
                                 response.artists = artists
-                                duration = (response.item.duration_ms - response.progress_ms) + durationModifierInMs
-                                console.log(`CALLBACK: Looks like it's going to be ${duration}ms until the song changes`)
+                                let msLeft = (response.item.duration_ms - response.progress_ms)
+                                duration = (msLeft > DEFAULT_DURATION) ? DEFAULT_DURATION : msLeft
+                                console.log(`CALLBACK: Looks like it's going to be ${msLeft}ms until the song changes`)
 
                                 nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
-                                console.log(`CALLBACK: Last second duration check is ${duration}ms`)
                                 intervalId = window.setInterval(() => { getSong() }, duration)
                             } else {
                                 // what do we do here?
@@ -149,8 +149,8 @@
                                 intervalId = window.setInterval(() => { $('#now-playing').hide() }, 1000)
                                 window.clearInterval(intervalId)
 
-                                console.log(`CALLBACK: Nothing is playing, or the player is offline.`)
-                                intervalId = window.setInterval(() => { getSong() }, DEFAULT_DURATION)
+                                console.log(`CALLBACK: Nothing is playing, or the player is offline. Checking again in ${duration}ms.`)
+                                intervalId = window.setInterval(() => { getSong() }, duration)
                             }
 
                         },
