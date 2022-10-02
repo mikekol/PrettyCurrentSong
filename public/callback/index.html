@@ -22,6 +22,11 @@
             animation: fadeOutKeyFrames 1s linear forwards;
         }
 
+        .spin {
+            transform: rotateY(0deg);
+	        animation: spinFrames 2s linear forwards;
+        }
+
         @keyframes fadeInKeyFrames {
             0%   { opacity : 0 }
             100% { opacity : 1 }
@@ -30,6 +35,21 @@
         @keyframes fadeOutKeyFrames {
             0%   { opacity : 1 }
             100% { opacity : 0 }
+        }
+
+        @keyframes rotateFirstHalfFrames {
+            from {transform: rotateY(0deg);}
+            to {transform: rotateY(90deg);}
+        }
+
+        @keyframes rotateSecondHalfFrames {
+            from {transform: rotateY(270deg);}
+            to {transform: rotateY(360deg);}
+        }
+
+        @keyframes spinFrames {
+            from {transform: rotateY(0deg);}
+            to {transform: rotateY(360deg);}
         }
 
         .media {
@@ -58,7 +78,7 @@
     <script id="now-playing-template" type="text/x-handlebars-template">
         <div class="media">
             <div class="pull-left">
-                <img class="media-object" width="64" src="{{item.album.images.2.url}}" />
+                <img class="media-object spin" width="64" src="{{item.album.images.2.url}}" />
             </div>
             <h4><b>Song:</b> {{item.name}}<b> | Album:</b> {{item.album.name }}<p><b>Artist(s):</b> {{artists}}</h4>
         </div>
@@ -68,7 +88,7 @@
     <script>
         const DEFAULT_DURATION = 10 * 1000
         var stateKey = 'spotify_auth_state'
-        var durationModifierInMs = 4000
+        var durationModifierInMs = 1000
         var duration = DEFAULT_DURATION
         var redirect_uri = 'http://localhost:8888/callback'
         var login_redirect_uri = 'http://localhost:8888'
@@ -76,6 +96,7 @@
         var state = ''
         var storedState = ''
         var intervalId = undefined
+        var lastSongTitle = undefined
 
         function getSong() {
             if (!!intervalId) {
@@ -123,8 +144,6 @@
                         },
                         success: function (response) {
                             if (!!response && !!response.is_playing) {
-                                $('#now-playing').show()
-                                jQuery('#now-playing').removeClass('fadeOut').addClass('fadeIn')
                                 // Get the artist names if there are multiple.
                                 let artists = ''
                                 for (let i = 0; i < response.item.artists.length; i++) {
@@ -138,10 +157,17 @@
 
                                 response.artists = artists
                                 let msLeft = (response.item.duration_ms - response.progress_ms)
-                                duration = (msLeft > DEFAULT_DURATION) ? DEFAULT_DURATION : msLeft
+                                duration = (msLeft > DEFAULT_DURATION) ? DEFAULT_DURATION : msLeft + durationModifierInMs
                                 console.log(`CALLBACK: Looks like it's going to be ${msLeft}ms until the song changes`)
-
-                                nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
+                                if (response.item.name != lastSongTitle) {
+                                    console.log(`CALLBACK: Refreshing template...`)
+                                    $('#now-playing').show()
+                                    jQuery('#now-playing').removeClass('fadeOut').addClass('fadeIn')
+                                    nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
+                                    lastSongTitle = response.item.name
+                                } else {
+                                    console.log(`CALLBACK: Skipping refresh...`)
+                                }
                                 intervalId = window.setInterval(() => { getSong() }, duration)
                             } else {
                                 // what do we do here?
