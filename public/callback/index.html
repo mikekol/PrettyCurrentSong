@@ -144,6 +144,8 @@
                         },
                         success: function (response) {
                             if (!!response && !!response.is_playing) {
+                                $('#now-playing').show()
+                                jQuery('#now-playing').removeClass('fadeOut').addClass('fadeIn')
                                 // Get the artist names if there are multiple.
                                 let artists = ''
                                 for (let i = 0; i < response.item.artists.length; i++) {
@@ -161,8 +163,6 @@
                                 console.log(`CALLBACK: Looks like it's going to be ${msLeft}ms until the song changes`)
                                 if (response.item.name != lastSongTitle) {
                                     console.log(`CALLBACK: Refreshing template...`)
-                                    $('#now-playing').show()
-                                    jQuery('#now-playing').removeClass('fadeOut').addClass('fadeIn')
                                     nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
                                     lastSongTitle = response.item.name
                                 } else {
