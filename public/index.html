@@ -88,7 +88,7 @@
     <script src="./main.js"></script>
     <script>
         const DEFAULT_DURATION = 10 * 1000
-        const TOKEN_TIME_THRESHOLD = 10 * 60 * 1000
+        const TOKEN_TIME_THRESHOLD = 30 * 60 * 1000
         let durationModifierInMs = 1000
         let duration = DEFAULT_DURATION
         let songIntervalId = undefined
@@ -113,6 +113,7 @@
                 console.log(`GETSONG: token time ${tokenTimeRemaining}ms`)
 
                 if (tokenTimeRemaining <= TOKEN_TIME_THRESHOLD) {
+                    console.log(`GETSONG: Refreshing token...`)
                     refreshToken()
                 }
 

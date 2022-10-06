@@ -1,4 +1,4 @@
-(function () {
+
     function generateRandomString(length) {
         let text = '';
         const possible =
@@ -130,7 +130,6 @@
         localStorage.setItem('refresh_token', refresh_token);
         localStorage.setItem('expires_at', expires_at);
     }
-
     // Your client id from your app in the spotify dashboard:
     // https://developer.spotify.com/dashboard/applications
     const client_id = 'ec89600e478d4d8aa1a78e6a0a7e6097';
@@ -142,7 +141,7 @@
     let refresh_token = localStorage.getItem('refresh_token') || null;
     let expires_at = localStorage.getItem('expires_at') || null;
 
-
+(function() {
     // If the user has accepted the authorize request spotify will come back to your application with the code in the response query string
     // Example: http://localhost:8888/?code=NApCCg..BkWtQ&state=profile%2Factivity
     const args = new URLSearchParams(window.location.search);
