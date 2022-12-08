@@ -11,11 +11,7 @@
     <style type="text/css">
         body {
             background-color: rgba(0, 0, 0, 0);
-        }
-
-        h4 {
-            font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            color: white;
+            overflow:hidden;
         }
 
         .fadeIn {
@@ -25,11 +21,29 @@
         .fadeOut {
             animation: fadeOutKeyFrames 1s linear forwards;
         }
-
+        
         .spin {
             transform: rotateY(0deg);
 	        animation: spinFrames 2s linear forwards;
         }
+
+        .media-object {
+            border-radius: 15px;
+            padding: 5px;
+        }
+
+        .media {
+            border-radius: 15px;
+            background: rgba(0, 0, 0, .85);
+            padding: 5px;
+        }
+
+        .info {
+            margin: 3px;
+            font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: white;
+            font-size:1em;
+        }        
 
         @keyframes fadeInKeyFrames {
             0%   { opacity : 0 }
@@ -42,37 +56,19 @@
         }
 
         @keyframes rotateFirstHalfFrames {
-            from {transform: rotateY(0deg);}
-            to {transform: rotateY(90deg);}
+            from { transform: rotateY(0deg);  }
+            to   { transform: rotateY(90deg); }
         }
 
         @keyframes rotateSecondHalfFrames {
-            from {transform: rotateY(270deg);}
-            to {transform: rotateY(360deg);}
+            from { transform: rotateY(270deg); }
+            to   { transform: rotateY(360deg); }
         }
 
         @keyframes spinFrames {
-            from {transform: rotateY(0deg);}
-            to {transform: rotateY(360deg);}
-        }
-
-        .media {
-            border-radius: 15px;
-            background: rgba(0, 0, 0, .85);
-            padding: 5px;
-        }
-
-        .text-overflow {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: 500px;
-        }
-
-        .media-object {
-            border-radius: 15px;
-            padding: 5px;
-        }
+            from { transform: rotateY(0deg);   }
+            to   { transform: rotateY(360deg); }
+        }        
     </style>
 </head>
 
@@ -80,11 +76,13 @@
     <div id="now-playing" class="fadeIn">
     </div>
     <script id="now-playing-template" type="text/x-handlebars-template">
-        <div class="media">
-            <div class="pull-left">
-                <img class="media-object spin" width="64" src="{{item.album.images.2.url}}" />
+        <div class="media text-overflow">
+            <img class="media-object spin pull-left" width="64" src="{{item.album.images.2.url}}" />
+            <div class="info">
+                <b>Title:</b> {{item.name}}<br>
+                <b>Album:</b> {{item.album.name}}<br>
+                <b>Artist(s):</b> {{artists}}
             </div>
-            <h4><b>Song:</b> {{item.name}}<b> | Album:</b> {{item.album.name }}<p><b>Artist(s):</b> {{artists}}</h4>
         </div>
     </script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
@@ -165,7 +163,7 @@
 
                     },
                     error: function (textStatus, errorThrown) {
-                        console.log(`GETSONG: Error: ${textStatus}\r\n${errorThrown}`)
+                        console.log(`GETSONG: Error: ${textStatus.statusText}\r\n${errorThrown}`)
                         // Probably a token refresh thing.
 
                     }
