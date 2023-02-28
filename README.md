@@ -10,7 +10,7 @@ Use the run_pcs.cmd or run_pcs.sh scripts (Windows and Mac/Linux, respectively) 
 Launch Spotify and start playing something.
 
 Add a Browser Source to your OBS scene, and set the URL to http://localhost:8888.
-I use a height of 75 and a width of 700, but you do you.  I recommend checking "Shutdown source when not visible" and "Refresh browser when scene becomes active". Initially, you may want to set the height to be bigger because of the next step.
+I use a height of 95 and a width of 700, but you do you.  I recommend checking "Shutdown source when not visible" and "Refresh browser when scene becomes active". Initially, you may want to set the height to be bigger because of the next step.
 
 Once you add it (and have the server running!), click the Interact button in OBS. This should open the app in an interactive window, and it should prompt you to sign into Spotify, and authorize the application to access your account. You are only giving the application the permission to read about your current player, and what media it's playing - it is read-only: this app does not and cannot modify any of your account information.
 
