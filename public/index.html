@@ -30,7 +30,7 @@
         .media-object {
             border-radius: 15px;
             padding: 5px;
-            width: 12vw;
+            width: 11vw;
         }
 
         .media {
@@ -45,8 +45,7 @@
         .info {
             font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             color: white;
-            font-size:2.6rem;
-            margin-top: 1.5vw;
+            font-size:2.5rem;
         }
 
         @keyframes fadeInKeyFrames {
@@ -83,8 +82,8 @@
         <div class="media text-overflow">
             <img class="media-object spin pull-left" src="{{item.album.images.2.url}}" />
             <div class="info">
-                <b>Title:</b> {{item.name}} <b>| Album:</b> {{item.album.name}}<br>
-                <b>Artist(s):</b> {{artists}}
+                <b>Title:</b> {{item.name}}<br>
+                <b>Album:</b> {{item.album.name}} <i>by</i> {{artists}}
             </div>
         </div>
     </script>
