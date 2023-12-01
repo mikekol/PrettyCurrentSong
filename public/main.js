@@ -134,7 +134,7 @@ function processTokenResponse(data) {
 
 // Your client id from your app in the spotify dashboard:
 // https://developer.spotify.com/dashboard/applications
-const client_id = 'ec89600e478d4d8aa1a78e6a0a7e6097';
+const client_id = undefined;
 
 const redirect_uri = 'http://localhost:8888'; // Your redirect uri
 const scope = 'user-read-playback-state user-read-currently-playing'
