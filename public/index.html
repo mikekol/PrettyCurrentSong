@@ -140,11 +140,11 @@
 
         function getSong() {
             if (!!songIntervalId) {
-                console.log('GETSONG: Cleaning up interval...')
+                console.log('getSong: Cleaning up interval...')
                 window.clearInterval(songIntervalId)
             }
 
-            console.log('GETSONG: Getting the song')
+            console.log('getSong: Getting the song')
 
             let nowPlayingSource = document.getElementById('now-playing-template').innerHTML,
                 nowPlayingTemplate = Handlebars.compile(nowPlayingSource),
@@ -152,10 +152,10 @@
 
             if (localStorage.getItem('access_token') ) {
                 let tokenTimeRemaining = (localStorage.getItem('expires_at')) - Date.now()
-                console.log(`GETSONG: token time ${tokenTimeRemaining}ms`)
+                console.log(`getSong: token time ${tokenTimeRemaining}ms`)
 
                 if (tokenTimeRemaining <= TOKEN_TIME_THRESHOLD) {
-                    console.log(`GETSONG: Refreshing token...`)
+                    console.log(`getSong: Refreshing token...`)
                     refreshToken()
                 }
 
@@ -183,14 +183,14 @@
 
                             let msLeft = (response.item.duration_ms - response.progress_ms)
                             duration = (msLeft > DEFAULT_DURATION) ? DEFAULT_DURATION : msLeft + durationModifierInMs
-                            console.log(`GETSONG: Looks like it's going to be ${msLeft}ms until the song changes`)
+                            console.log(`getSong: Looks like it's going to be ${msLeft}ms until the song changes`)
 
                             if (response.item.name != lastSongTitle) {
-                                console.log(`GETSONG: Refreshing template...`)
+                                console.log(`getSong: Refreshing template...`)
                                 nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
                                 lastSongTitle = response.item.name
                             } else {
-                                console.log(`GETSONG: Skipping refresh...`)
+                                console.log(`getSong: Skipping refresh...`)
                             }
 
                             songIntervalId = window.setInterval(() => { getSong() }, duration)
@@ -200,17 +200,17 @@
                             songIntervalId = window.setInterval(() => { $('#now-playing').hide() }, 1000)
                             window.clearInterval(songIntervalId)
 
-                            console.log(`GETSONG: Nothing is playing, or the player is offline. Checking again in ${duration}ms.`)
+                            console.log(`getSong: Nothing is playing, or the player is offline. Checking again in ${duration}ms.`)
                             songIntervalId = window.setInterval(() => { getSong() }, duration)
                         }
                     },
                     error: function (textStatus, errorThrown) {
-                        console.log(`GETSONG: Error: ${textStatus.statusText}\r\n${errorThrown}`)
+                        console.log(`getSong: Error: ${textStatus.statusText}\r\n${errorThrown}`)
                         // Probably a token refresh thing.
                     }
                 });
             } else {
-                console.log('GETSONG: No access token - trying to recover.')
+                console.log('getSong: No access token - trying to recover.')
                 redirectToSpotifyAuthorizeEndpoint()
             }
         }
