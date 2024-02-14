@@ -8,101 +8,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
-    <style type="text/css">
-        body {
-            background-color: rgba(0, 0, 0, 0);
-            overflow:hidden;
-        }
-
-        .fadeIn {
-            animation: fadeInKeyFrames 1s linear forwards;
-        }
-
-        .fadeOut {
-            animation: fadeOutKeyFrames 1s linear forwards;
-        }
-
-        .spin {
-            transform: rotateY(0deg);
-            animation: spinFrames 2s linear forwards;
-        }
-
-        .cover-art {
-            border-radius: 15px;
-            padding: 5px;
-            width: 11vw;
-        }
-
-        .now-playing-container {
-            border-radius: 15px;
-            background: rgba(0, 0, 0, .85);
-            padding: 5px;
-            display:inline-block;
-            height:100%;
-            width:100%;
-            margin-left: auto;
-            margin-right: auto;
-            margin-top: auto;
-            margin-bottom: auto;
-        }
-
-        .info {
-            font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            color: white;
-            font-size:1em;
-        }
-
-        .marquee {
-            --gap: .25em;
-            display: flex;
-            overflow: hidden;
-            user-select: none;
-            gap: var(--gap);
-        }
-
-        .marquee__content {
-            flex-shrink: 0;
-            display: flex;
-            min-width: 100%;
-            gap: var(--gap);
-        }
-
-        /* Enable animation */
-        .enable-animation .marquee__content {
-            animation: scroll 10s linear infinite;
-        }
-
-        @keyframes fadeInKeyFrames {
-            0%   { opacity : 0 }
-            100% { opacity : 1 }
-        }
-
-        @keyframes fadeOutKeyFrames {
-            0%   { opacity : 1 }
-            100% { opacity : 0 }
-        }
-
-        @keyframes rotateFirstHalfFrames {
-            from { transform: rotateY(0deg);  }
-            to   { transform: rotateY(90deg); }
-        }
-
-        @keyframes rotateSecondHalfFrames {
-            from { transform: rotateY(270deg); }
-            to   { transform: rotateY(360deg); }
-        }
-
-        @keyframes spinFrames {
-            from { transform: rotateY(0deg);   }
-            to   { transform: rotateY(360deg); }
-        }
-
-        @keyframes scroll {
-            from { transform: translateX(0); }
-            to   { transform: translateX(calc(-100% - var(--gap))); }
-        }
-    </style>
-</head>
+    <link rel="stylesheet" href="./index.css">
 
 <body>
     <div id="now-playing" class="fadeIn">
@@ -112,14 +18,11 @@
             <div id="artContainer">
                 <img id="art" class="cover-art spin float-start img-fluid" src="{{item.album.images.2.url}}" />
             </div>
-            <div id="title" class="info text-start">
-                <b>Title:</b> {{item.name}}
-            </div>
-            <div id="albumMarquee" class="marquee text-start">
-                <div id="albumMarqueeMain" class="info marquee__content">
-                    <b>Album:</b> {{item.album.name}} <i>by</i> {{artists}}
+            <div id="thing" class="info text-start vertical-center">
+                <div class="module">
+                    <b>Title:</b> {{item.name}}
                 </div>
-                <div id="albumMarqueeEnd" class="info marquee__content" aria-hidden="true">
+                <div class="module">
                     <b>Album:</b> {{item.album.name}} <i>by</i> {{artists}}
                 </div>
             </div>
