@@ -101,10 +101,10 @@ function refreshToken() {
 
 function handleError(error) {
     console.error(error);
-    mainPlaceholder.innerHTML = errorTemplate({
-        status: error.response.status,
-        message: error.error.error_description,
-    });
+    // mainPlaceholder.innerHTML = errorTemplate({
+    //     status: error.response.status,
+    //     message: error.error.error_description,
+    // });
 }
 
 async function addThrowErrorToFetch(response) {
