@@ -23,6 +23,7 @@ body {
 }
 
 .now-playing-container {
+    position: relative;
     border-radius: 15px;
     background: rgba(0, 0, 0, .85);
     padding: 5px;
@@ -36,6 +37,17 @@ body {
     container-type: inline-size;
 }
 
+.background-image {
+    top: -50%;
+    position: absolute;
+    opacity: 10%;
+    background-color: #000000; /* Used if the image is unavailable */
+    width: 100%;
+    background-position: center; /* Center the image */
+    background-repeat: no-repeat; /* Do not repeat the image */
+    background-size: cover; /* Resize the background image to cover the entire container */
+}
+
 .vertical-center {
     margin: 50;
     position: relative;
@@ -43,9 +55,16 @@ body {
     transform: translateY(1cqh);
   }
 
-.module {
-    font-size: 3cqi;
+.song-title {
+    font-size: 5cqi;
 }
+
+.artists {
+    font-family: "Bungee Spice", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 3.5cqi;
+  }
 
 .info {
     font-family: "Lato", sans-serif;
