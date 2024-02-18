@@ -40,6 +40,7 @@ body {
 .background-image {
     top: -50%;
     position: absolute;
+    max-height: min-content;
     opacity: 10%;
     background-color: #000000; /* Used if the image is unavailable */
     width: 100%;
@@ -74,23 +75,23 @@ body {
 }
 
 .marquee {
-    --gap: .25em;
-    display: flex;
+    white-space: nowrap;
     overflow: hidden;
-    user-select: none;
-    gap: var(--gap);
+    position: relative;
 }
 
-.marquee__content {
-    flex-shrink: 0;
-    display: flex;
-    min-width: 100%;
-    gap: var(--gap);
+.marquee span {
+    display: inline-block;
+    animation: marquee 10s linear infinite;
 }
 
-/* Enable animation */
-.enable-animation .marquee__content {
-    animation: scroll 10s linear infinite;
+@keyframes marquee {
+    0% {
+        transform: translateX(100vw);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
 }
 
 @keyframes fadeInKeyFrames {
@@ -116,9 +117,4 @@ body {
 @keyframes spinFrames {
     from { transform: rotateY(0deg);   }
     to   { transform: rotateY(360deg); }
-}
-
-@keyframes scroll {
-    from { transform: translateX(0); }
-    to   { transform: translateX(calc(-100% - var(--gap))); }
 }

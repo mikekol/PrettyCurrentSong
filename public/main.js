@@ -1,6 +1,19 @@
 
 // Heavily based on code from https://github.com/tobika/spotify-auth-PKCE-example
 
+
+// Your client id from your app in the spotify dashboard:
+// https://developer.spotify.com/dashboard/applications
+const client_id = `ec89600e478d4d8aa1a78e6a0a7e6097`;
+
+const redirect_uri = 'http://localhost:8888'; // Your redirect uri
+const scope = 'user-read-playback-state user-read-currently-playing'
+
+// Restore tokens from localStorage
+let access_token = localStorage.getItem('access_token') || null;
+let refresh_token = localStorage.getItem('refresh_token') || null;
+let expires_at = localStorage.getItem('expires_at') || null;
+
 function generateRandomString(length) {
     let text = '';
     const possible =
@@ -132,17 +145,6 @@ function processTokenResponse(data) {
     localStorage.setItem('expires_at', expires_at);
 }
 
-// Your client id from your app in the spotify dashboard:
-// https://developer.spotify.com/dashboard/applications
-const client_id = `ec89600e478d4d8aa1a78e6a0a7e6097`;
-
-const redirect_uri = 'http://localhost:8888'; // Your redirect uri
-const scope = 'user-read-playback-state user-read-currently-playing'
-
-// Restore tokens from localStorage
-let access_token = localStorage.getItem('access_token') || null;
-let refresh_token = localStorage.getItem('refresh_token') || null;
-let expires_at = localStorage.getItem('expires_at') || null;
 
 (function () {
     // If the user has accepted the authorize request spotify will come back to your application with the code in the response query string
