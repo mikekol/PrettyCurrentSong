@@ -49,15 +49,9 @@ body {
     background-size: cover; /* Resize the background image to cover the entire container */
 }
 
-.vertical-center {
-    margin: 50;
-    position: relative;
-    top: 50%;
-    transform: translateY(1cqh);
-  }
-
 .song-title {
-    font-size: 5cqi;
+    vertical-align:top;
+    font-size: 7cqi;
 }
 
 .artists {
@@ -86,12 +80,8 @@ body {
 }
 
 @keyframes marquee {
-    0% {
-        transform: translateX(100vw);
-    }
-    100% {
-        transform: translateX(-100%);
-    }
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
 }
 
 @keyframes fadeInKeyFrames {

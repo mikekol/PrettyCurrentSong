@@ -1,0 +1,6 @@
+.song-title {
+    font-size: 25pt;
+}
+.artists {
+    font-size: 15pt;
+}
