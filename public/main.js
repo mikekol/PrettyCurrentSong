@@ -1,7 +1,6 @@
 
 // Heavily based on code from https://github.com/tobika/spotify-auth-PKCE-example
 
-
 // Your client id from your app in the spotify dashboard:
 // https://developer.spotify.com/dashboard/applications
 const client_id = `ec89600e478d4d8aa1a78e6a0a7e6097`;
@@ -114,10 +113,6 @@ function refreshToken() {
 
 function handleError(error) {
     console.error(error);
-    // mainPlaceholder.innerHTML = errorTemplate({
-    //     status: error.response.status,
-    //     message: error.error.error_description,
-    // });
 }
 
 async function addThrowErrorToFetch(response) {
