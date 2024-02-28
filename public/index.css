@@ -1,6 +1,6 @@
 body {
     background-color: rgba(0, 0, 0, 0);
-    overflow:hidden;
+    overflow: hidden;
 }
 
 .fadeIn {
@@ -27,9 +27,9 @@ body {
     border-radius: 15px;
     background: rgba(0, 0, 0, .85);
     padding: 5px;
-    display:inline-block;
-    height:100%;
-    width:100%;
+    display: inline-block;
+    height: 100%;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
     margin-top: auto;
@@ -42,15 +42,19 @@ body {
     position: absolute;
     max-height: min-content;
     opacity: 10%;
-    background-color: #000000; /* Used if the image is unavailable */
+    background-color: #000000;
+    /* Used if the image is unavailable */
     width: 100%;
-    background-position: center; /* Center the image */
-    background-repeat: no-repeat; /* Do not repeat the image */
-    background-size: cover; /* Resize the background image to cover the entire container */
+    background-position: center;
+    /* Center the image */
+    background-repeat: no-repeat;
+    /* Do not repeat the image */
+    background-size: cover;
+    /* Resize the background image to cover the entire container */
 }
 
 .song-title {
-    vertical-align:top;
+    vertical-align: top;
     font-size: 7cqi;
 }
 
@@ -59,7 +63,7 @@ body {
     font-weight: 400;
     font-style: normal;
     font-size: 3.5cqi;
-  }
+}
 
 .info {
     font-family: "Lato", sans-serif;
@@ -80,31 +84,61 @@ body {
 }
 
 @keyframes marquee {
-    0%   { transform: translateX(100vw); }
-    100% { transform: translateX(-100%); }
+    0% {
+        transform: translateX(100vw);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
 }
 
 @keyframes fadeInKeyFrames {
-    0%   { opacity : 0 }
-    100% { opacity : 1 }
+    0% {
+        opacity: 0
+    }
+
+    100% {
+        opacity: 1
+    }
 }
 
 @keyframes fadeOutKeyFrames {
-    0%   { opacity : 1 }
-    100% { opacity : 0 }
+    0% {
+        opacity: 1
+    }
+
+    100% {
+        opacity: 0
+    }
 }
 
 @keyframes rotateFirstHalfFrames {
-    from { transform: rotateY(0deg);  }
-    to   { transform: rotateY(90deg); }
+    from {
+        transform: rotateY(0deg);
+    }
+
+    to {
+        transform: rotateY(90deg);
+    }
 }
 
 @keyframes rotateSecondHalfFrames {
-    from { transform: rotateY(270deg); }
-    to   { transform: rotateY(360deg); }
+    from {
+        transform: rotateY(270deg);
+    }
+
+    to {
+        transform: rotateY(360deg);
+    }
 }
 
 @keyframes spinFrames {
-    from { transform: rotateY(0deg);   }
-    to   { transform: rotateY(360deg); }
+    from {
+        transform: rotateY(0deg);
+    }
+
+    to {
+        transform: rotateY(360deg);
+    }
 }
