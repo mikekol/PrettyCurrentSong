@@ -27,50 +27,46 @@ body {
     border-radius: 15px;
     background: rgba(0, 0, 0, .85);
     padding: 5px;
-    display: inline-block;
+    display: display-inside;
     height: 100%;
     width: 100%;
     margin-left: auto;
     margin-right: auto;
     margin-top: auto;
     margin-bottom: auto;
-    container-type: inline-size;
+    container-type: normal;
 }
 
 .background-image {
-    top: -50%;
+    top: 0px;
+    left: 0px;
     position: absolute;
     max-height: min-content;
-    opacity: 10%;
+    opacity: 30%;
     background-color: #000000;
-    /* Used if the image is unavailable */
     width: 100%;
-    background-position: center;
-    /* Center the image */
-    background-repeat: no-repeat;
-    /* Do not repeat the image */
-    background-size: cover;
-    /* Resize the background image to cover the entire container */
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
 }
 
 .song-title {
     vertical-align: top;
     font-size: 7cqi;
-}
-
-.artists {
-    font-family: "Lato", sans-serif;
-    font-weight: 1000;
-    font-style: normal;
-    font-size: 3.5cqi;
-    color: orangered
-}
-
-.info {
     font-family: "Lato", sans-serif;
     font-weight: 400;
     font-style: normal;
     color: white;
+}
+
+.artists {
+    vertical-align: top;
+    font-size: 3.5cqi;
+    font-family: "Lato", sans-serif;
+    font-weight: 1000;
+    font-style: normal;
+    color: orangered;
+    position: relative;
 }
 
 .marquee {
