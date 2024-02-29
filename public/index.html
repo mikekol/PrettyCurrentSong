@@ -39,12 +39,16 @@
     <script>
         const DEFAULT_DURATION = 10 * 1000
         const TOKEN_TIME_THRESHOLD = 30 * 60 * 1000
+        const CHANNEL_LOGO = './logo.png'
+
         let durationModifierInMs = 1000
         let duration = DEFAULT_DURATION
         let songIntervalId = undefined
         let tokenIntervalId = undefined
 
         let lastSongTitle = undefined
+        let lastSongBigImage = CHANNEL_LOGO
+        let lastSongSmallImage = CHANNEL_LOGO
 
         function getSong() {
             if (!!songIntervalId) {
@@ -73,8 +77,18 @@
                         'Authorization': 'Bearer ' + localStorage.getItem('access_token')
                     },
                     success: function (response) {
+                        //console.log(response)
                         if (!!response && !!response.is_playing) {
+                            if (response.item.album.images.length === 0) {
+                                console.log(`getSong: No images for the song. Using the channel logo.`)
+                                response.item.album.images[1] = { url: CHANNEL_LOGO }
+                                response.item.album.images[2] = { url: CHANNEL_LOGO }
+                            }
+                            // $('#backgroundArt').attr('src', lastSongBigImage)
+                            // $('#art').attr('src', lastSongSmallImage)
                             $('#now-playing').show()
+                            // $('#backgroundArt').attr('src', response.item.album.images[1].url)
+                            // $('#art').attr('src', response.item.album.images[2].url)
                             jQuery('#now-playing').removeClass('fadeOut').addClass('fadeIn')
                             // Get the artist names if there are multiple.
                             let artists = ''
@@ -82,7 +96,7 @@
                                 if (response.item.artists.length > 1) {
                                     artists = `${artists}, ${response.item.artists[i].name}`
                                 } else {
-                                    artists = `${response.item.artists[i].name}`
+                                    artists = `, ${response.item.artists[i].name}`
                                 }
                             }
                             // We always start with a comma and a space, so we slice it off.
@@ -96,6 +110,8 @@
                                 console.log(`getSong: Refreshing template...`)
                                 nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
                                 lastSongTitle = response.item.name
+                                lastSongBigImage = response.item.album.images[1].url
+                                lastSongSmallImage = response.item.album.images[2].url
                             } else {
                                 console.log(`getSong: Skipping refresh...`)
                             }
