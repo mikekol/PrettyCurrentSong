@@ -16,6 +16,16 @@ body {
     animation: spinFrames 2s linear forwards;
 }
 
+.spin-into-logo {
+    transform: rotateY(0deg);
+    animation: spinFirstHalfFrames 1s linear forwards;
+}
+
+.spin-outof-logo {
+    transform: rotateY(0deg);
+    animation: spinSecondHalfFrames 1s linear forwards;
+}
+
 .cover-art {
     border-radius: 1cqi;
     padding: 1cqi;
@@ -24,7 +34,6 @@ body {
 
 .now-playing-container {
     position: relative;
-    border-radius: 15px;
     background: rgba(0, 0, 0, .85);
     padding: 5px;
     display: display-inside;
@@ -42,7 +51,7 @@ body {
     left: 0px;
     position: absolute;
     max-height: min-content;
-    opacity: 30%;
+    opacity: 25%;
     background-color: #000000;
     width: 100%;
     height: 100%;
@@ -110,7 +119,7 @@ body {
     }
 }
 
-@keyframes rotateFirstHalfFrames {
+@keyframes spinFirstHalfFrames {
     from {
         transform: rotateY(0deg);
     }
@@ -120,7 +129,7 @@ body {
     }
 }
 
-@keyframes rotateSecondHalfFrames {
+@keyframes spinSecondHalfFrames {
     from {
         transform: rotateY(270deg);
     }
