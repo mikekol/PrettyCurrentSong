@@ -5,7 +5,9 @@
 // https://developer.spotify.com/dashboard/applications
 const client_id = `ec89600e478d4d8aa1a78e6a0a7e6097`;
 
-const redirect_uri = 'http://localhost:8888'; // Your redirect uri
+// Use the current origin as the redirect URI to support localhost, 127.0.0.1, etc.
+const redirect_uri = window.location.origin; // Your redirect uri
+console.log(`Redirect URI: ${redirect_uri}`);
 const scope = 'user-read-playback-state user-read-currently-playing'
 
 // Restore tokens from localStorage
