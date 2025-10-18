@@ -11,7 +11,14 @@ const scope = 'user-read-playback-state user-read-currently-playing'
 // Restore tokens from localStorage
 let access_token = localStorage.getItem('access_token') || null;
 let refresh_token = localStorage.getItem('refresh_token') || null;
-let expires_at = localStorage.getItem('expires_at') || null;
+let expires_at = localStorage.getItem('expires_at');
+if (expires_at) {
+    // localStorage stores strings; ensure we have a number or null
+    const parsed = parseInt(expires_at, 10);
+    expires_at = Number.isNaN(parsed) ? null : parsed;
+} else {
+    expires_at = null;
+}
 
 function generateRandomString(length) {
     let text = '';
@@ -84,18 +91,27 @@ function exchangeToken(code) {
             code_verifier,
         }),
     })
-        .then(addThrowErrorToFetch)
-        .then((data) => {
-            processTokenResponse(data);
+    .then(addThrowErrorToFetch)
+    .then((data) => {
+        processTokenResponse(data);
 
-            // clear search query params in the url
-            window.history.replaceState({}, document.title, '/');
-        })
-        .catch(handleError);
+        // clear search query params in the url
+        window.history.replaceState({}, document.title, '/');
+    })
+    .catch(handleError);
 }
 
 function refreshToken() {
     const refresh_token = localStorage.getItem('refresh_token');
+    // Validate the refresh token exists and is not the literal string 'undefined' or 'null'
+    if (!refresh_token || refresh_token === 'undefined' || refresh_token === 'null') {
+        // nothing we can do; force a full re-auth
+        if (window.NODE_ENV !== 'production') {
+            console.warn('refreshToken: no valid refresh_token found in storage, redirecting to authorize endpoint');
+        }
+        redirectToSpotifyAuthorizeEndpoint();
+        return;
+    }
     fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
@@ -107,9 +123,9 @@ function refreshToken() {
             refresh_token,
         }),
     })
-        .then(addThrowErrorToFetch)
-        .then(processTokenResponse)
-        .catch(handleError);
+    .then(addThrowErrorToFetch)
+    .then(processTokenResponse)
+    .catch(handleError);
 }
 
 function handleError(error) {
@@ -131,13 +147,17 @@ function logout() {
 
 function processTokenResponse(data) {
     access_token = data.access_token;
-    refresh_token = data.refresh_token;
+    // Only overwrite the stored refresh token if the response includes one.
+    // When using the refresh_token grant, Spotify may not return a new refresh_token.
+    if (data.refresh_token) {
+        refresh_token = data.refresh_token;
+        localStorage.setItem('refresh_token', refresh_token);
+    }
 
     const t = new Date();
     expires_at = t.setSeconds(t.getSeconds() + data.expires_in);
 
     localStorage.setItem('access_token', access_token);
-    localStorage.setItem('refresh_token', refresh_token);
     localStorage.setItem('expires_at', expires_at);
 }
 
