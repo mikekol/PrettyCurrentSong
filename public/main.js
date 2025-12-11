@@ -10,33 +10,51 @@ const redirect_uri = window.location.origin; // Your redirect uri
 console.log(`Redirect URI: ${redirect_uri}`);
 const scope = 'user-read-playback-state user-read-currently-playing'
 
-// Helper functions for URL hash-based token storage (OBS compatible)
-function getTokensFromHash() {
-    const hash = window.location.hash.substring(1);
-    if (!hash) return { access_token: null, refresh_token: null, expires_at: null };
+// Helper functions for cookie-based token storage (persists across OBS restarts)
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
 
-    const params = new URLSearchParams(hash);
-    const expires = params.get('expires_at');
+function setCookie(name, value, days = 365) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+
+function deleteCookie(name) {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+}
+
+function getTokensFromCookies() {
+    const access = getCookie('spotify_access_token');
+    const refresh = getCookie('spotify_refresh_token');
+    const expires = getCookie('spotify_expires_at');
     return {
-        access_token: params.get('access_token') || null,
-        refresh_token: params.get('refresh_token') || null,
+        access_token: access || null,
+        refresh_token: refresh || null,
         expires_at: expires ? parseInt(expires, 10) : null
     };
 }
 
-function saveTokensToHash(access, refresh, expires) {
-    const params = new URLSearchParams();
-    if (access) params.set('access_token', access);
-    if (refresh) params.set('refresh_token', refresh);
-    if (expires) params.set('expires_at', expires.toString());
-    const hashString = params.toString();
-    console.log('Saving tokens to hash:', hashString.substring(0, 100) + '...');
-    window.location.hash = hashString;
-    console.log('Hash after setting:', window.location.hash.substring(0, 100));
+function saveTokensToCookies(access, refresh, expires) {
+    console.log('Saving tokens to cookies');
+    if (access) setCookie('spotify_access_token', access);
+    if (refresh) setCookie('spotify_refresh_token', refresh);
+    if (expires) setCookie('spotify_expires_at', expires.toString());
+    console.log('Tokens saved to cookies');
 }
 
-// Restore tokens from URL hash
-const tokens = getTokensFromHash();
+function clearTokenCookies() {
+    deleteCookie('spotify_access_token');
+    deleteCookie('spotify_refresh_token');
+    deleteCookie('spotify_expires_at');
+}
+
+// Restore tokens from cookies
+const tokens = getTokensFromCookies();
 let access_token = tokens.access_token;
 let refresh_token = tokens.refresh_token;
 let expires_at = tokens.expires_at;
@@ -44,8 +62,7 @@ let expires_at = tokens.expires_at;
 console.log('Initial token state:', {
     hasAccessToken: !!access_token,
     hasRefreshToken: !!refresh_token,
-    expiresAt: expires_at,
-    currentHash: window.location.hash
+    expiresAt: expires_at
 });
 
 function generateRandomString(length) {
@@ -138,8 +155,8 @@ function exchangeToken(code) {
 }
 
 function refreshToken() {
-    // Get refresh_token from URL hash
-    const tokens = getTokensFromHash();
+    // Get refresh_token from cookies
+    const tokens = getTokensFromCookies();
     const refresh_token_to_use = tokens.refresh_token;
 
     // Validate the refresh token exists and is not the literal string 'undefined' or 'null'
@@ -177,8 +194,8 @@ function handleError(error) {
     const status = error && error.response && error.response.status;
     console.log('Error status:', status);
     if (status === 400 || status === 401 || status === 403) {
-        // Clear tokens from URL hash
-        window.location.hash = '';
+        // Clear tokens from cookies
+        clearTokenCookies();
         redirectToSpotifyAuthorizeEndpoint();
     }
 }
@@ -192,7 +209,7 @@ async function addThrowErrorToFetch(response) {
 }
 
 function logout() {
-    window.location.hash = '';
+    clearTokenCookies();
     sessionStorage.clear();
     window.location.reload();
 }
@@ -216,11 +233,9 @@ function processTokenResponse(data) {
 
     console.log('About to save tokens - access_token:', access_token ? 'present' : 'missing', 'refresh_token:', refresh_token ? 'present' : 'missing', 'expires_at:', expires_at);
 
-    // Save tokens to URL hash for OBS persistence
-    saveTokensToHash(access_token, refresh_token, expires_at);
+    // Save tokens to cookies for persistence
+    saveTokensToCookies(access_token, refresh_token, expires_at);
 }
-
-
 (function () {
     // If the user has accepted the authorize request spotify will come back to your application with the code in the response query string
     // Example: http://127.0.0.1:8889/?code=NApCCg..BkWtQ&state=profile%2Factivity
