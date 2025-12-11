@@ -27,8 +27,8 @@
             <div id="artContainer">
                 <img id="art" class="cover-art spin float-start img-fluid rounded" src="{{item.album.images.2.url}}" />
             </div>
-            <div class="artists">
-                <b>{{artists}}</b>
+            <div class="artists marquee">
+                <span>{{artists}}</span>
             </div>
             <div class="song-title marquee">
                 <span>{{item.name}}</span>
@@ -52,11 +52,15 @@
 
         function getSong() {
             if (!!songIntervalId) {
-                console.log('getSong: Cleaning up interval...')
+                if (window.NODE_ENV !== 'production') {
+                    console.log('getSong: Cleaning up interval...')
+                }
                 window.clearInterval(songIntervalId)
             }
 
-            console.log('getSong: Getting the song')
+            if (window.NODE_ENV !== 'production') {
+                console.log('getSong: Getting the song')
+            }
 
             let nowPlayingSource = document.getElementById('now-playing-template').innerHTML,
                 nowPlayingTemplate = Handlebars.compile(nowPlayingSource),
@@ -67,7 +71,9 @@
                 console.log(`getSong: token time ${tokenTimeRemaining}ms`)
 
                 if (tokenTimeRemaining <= TOKEN_TIME_THRESHOLD) {
-                    console.log(`getSong: Refreshing token...`)
+                    if (window.NODE_ENV !== 'production') {
+                        console.log(`getSong: Refreshing token...`)
+                    }
                     refreshToken()
                 }
 
@@ -77,10 +83,14 @@
                         'Authorization': 'Bearer ' + access_token
                     },
                     success: function (response) {
-                        //console.log(response)
+                        if (window.NODE_ENV !== 'production') {
+                            console.log(response)
+                        }
                         if (!!response && !!response.is_playing) {
                             if (response.item.album.images.length === 0) {
-                                console.log(`getSong: No images for the song. Using the channel logo.`)
+                                if (window.NODE_ENV !== 'production') {
+                                    console.log(`getSong: No images for the song. Using the channel logo.`)
+                                }
                                 response.item.album.images[1] = { url: CHANNEL_LOGO }
                                 response.item.album.images[2] = { url: CHANNEL_LOGO }
                             }
@@ -104,16 +114,22 @@
 
                             let msLeft = (response.item.duration_ms - response.progress_ms)
                             duration = (msLeft > DEFAULT_DURATION) ? DEFAULT_DURATION : msLeft + durationModifierInMs
-                            console.log(`getSong: Looks like it's going to be ${msLeft}ms until the song changes`)
+                            if (window.NODE_ENV !== 'production') {
+                                console.log(`getSong: Looks like it's going to be ${msLeft}ms until the song changes`)
+                            }
 
                             if (response.item.name != lastSongTitle) {
-                                console.log(`getSong: Refreshing template...`)
+                                if (window.NODE_ENV !== 'production') {
+                                    console.log(`getSong: Refreshing template...`)
+                                }
                                 nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
                                 lastSongTitle = response.item.name
                                 lastSongBigImage = response.item.album.images[1].url
                                 lastSongSmallImage = response.item.album.images[2].url
                             } else {
-                                console.log(`getSong: Skipping refresh...`)
+                                if (window.NODE_ENV !== 'production') {
+                                    console.log(`getSong: Skipping refresh...`)
+                                }
                             }
 
                             songIntervalId = window.setInterval(() => { getSong() }, duration)
@@ -123,17 +139,36 @@
                             songIntervalId = window.setInterval(() => { $('#now-playing').hide() }, 1000)
                             window.clearInterval(songIntervalId)
 
-                            console.log(`getSong: Nothing is playing, or the player is offline. Checking again in ${duration}ms.`)
+                            if (window.NODE_ENV !== 'production') {
+                                console.log(`getSong: Nothing is playing, or the player is offline. Checking again in ${duration}ms.`)
+                            }
                             songIntervalId = window.setInterval(() => { getSong() }, duration)
                         }
                     },
                     error: function (textStatus, errorThrown) {
-                        console.log(`getSong: Error: ${textStatus.statusText}\r\n${errorThrown}`)
-                        // Probably a token refresh thing.
+                        let errorMsg = `getSong: Error: ${textStatus.statusText}\r\n${errorThrown}`;
+                        if (window.NODE_ENV !== 'production') {
+                            console.error(errorMsg);
+                        }
+                        // If unauthorized, try to re-authenticate
+                        if (textStatus.status === 401 || (errorThrown && errorThrown.error && errorThrown.error.message === 'The access token expired')) {
+                            localStorage.removeItem('access_token');
+                            localStorage.removeItem('refresh_token');
+                            localStorage.removeItem('expires_at');
+                            redirectToSpotifyAuthorizeEndpoint();
+                        } else {
+                            // Optionally show a user-friendly error message in the UI
+                            const nowPlayingPlaceholder = document.getElementById('now-playing');
+                            if (nowPlayingPlaceholder) {
+                                nowPlayingPlaceholder.innerHTML = '<div class="alert alert-danger">An error occurred while fetching the song. Please try again.</div>';
+                            }
+                        }
                     }
                 });
             } else {
-                console.log('getSong: No access token - trying to recover.')
+                if (window.NODE_ENV !== 'production') {
+                    console.log('getSong: No access token - trying to recover.')
+                }
                 redirectToSpotifyAuthorizeEndpoint()
             }
         }

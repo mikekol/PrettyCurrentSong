@@ -37,14 +37,9 @@ let refresh_token = tokens.refresh_token;
 let expires_at = tokens.expires_at;
 
 function generateRandomString(length) {
-    let text = '';
-    const possible =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-    for (let i = 0; i < length; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const values = crypto.getRandomValues(new Uint8Array(length));
+    return values.reduce((acc, x) => acc + possible[x % possible.length], '');
 }
 
 async function generateCodeChallenge(codeVerifier) {
@@ -88,7 +83,7 @@ function redirectToSpotifyAuthorizeEndpoint() {
         );
 
         // If the user accepts spotify will come back to your application with the code in the response query string
-        // Example: http://localhost:8888/?code=NApCCg..BkWtQ&state=profile%2Factivity
+        // Example: http://127.0.0.1:8889/?code=NApCCg..BkWtQ&state=profile%2Factivity
     });
 }
 
@@ -98,7 +93,7 @@ function exchangeToken(code) {
     fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
         },
         body: new URLSearchParams({
             client_id,
@@ -108,9 +103,9 @@ function exchangeToken(code) {
             code_verifier,
         }),
     })
-        .then(addThrowErrorToFetch)
-        .then((data) => {
-            processTokenResponse(data);
+    .then(addThrowErrorToFetch)
+    .then((data) => {
+        processTokenResponse(data);
 
             // clear search query params but keep hash
             const newUrl = window.location.pathname + window.location.hash;
@@ -120,6 +115,16 @@ function exchangeToken(code) {
 }
 
 function refreshToken() {
+    const refresh_token = localStorage.getItem('refresh_token');
+    // Validate the refresh token exists and is not the literal string 'undefined' or 'null'
+    if (!refresh_token || refresh_token === 'undefined' || refresh_token === 'null') {
+        // nothing we can do; force a full re-auth
+        if (window.NODE_ENV !== 'production') {
+            console.warn('refreshToken: no valid refresh_token found in storage, redirecting to authorize endpoint');
+        }
+        redirectToSpotifyAuthorizeEndpoint();
+        return;
+    }
     fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
@@ -131,13 +136,24 @@ function refreshToken() {
             refresh_token,
         }),
     })
-        .then(addThrowErrorToFetch)
-        .then(processTokenResponse)
-        .catch(handleError);
+    .then(addThrowErrorToFetch)
+    .then(processTokenResponse)
+    .catch(handleError);
 }
 
 function handleError(error) {
-    console.error(error);
+    if (window.NODE_ENV !== 'production') {
+        console.error(error);
+    }
+
+    // If the request failed due to authorization (expired/invalid token), force re-auth
+    const status = error && error.response && error.response.status;
+    if (status === 400 || status === 401 || status === 403) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('expires_at');
+        redirectToSpotifyAuthorizeEndpoint();
+    }
 }
 
 async function addThrowErrorToFetch(response) {
@@ -156,7 +172,12 @@ function logout() {
 
 function processTokenResponse(data) {
     access_token = data.access_token;
-    refresh_token = data.refresh_token;
+    // Only overwrite the stored refresh token if the response includes one.
+    // When using the refresh_token grant, Spotify may not return a new refresh_token.
+    if (data.refresh_token) {
+        refresh_token = data.refresh_token;
+        localStorage.setItem('refresh_token', refresh_token);
+    }
 
     const t = new Date();
     expires_at = t.setSeconds(t.getSeconds() + data.expires_in);
@@ -168,12 +189,12 @@ function processTokenResponse(data) {
 
 (function () {
     // If the user has accepted the authorize request spotify will come back to your application with the code in the response query string
-    // Example: http://localhost:8888/?code=NApCCg..BkWtQ&state=profile%2Factivity
+    // Example: http://127.0.0.1:8889/?code=NApCCg..BkWtQ&state=profile%2Factivity
     const args = new URLSearchParams(window.location.search);
     const code = args.get('code');
 
     if (code) {
-        // we have received the code from spotify and will exchange it for a access_token
+        // we have received the code from spotify and will exchange it for an access_token
         exchangeToken(code);
     } else if (access_token && refresh_token && expires_at) {
         // we are already authorized and have tokens from URL hash
@@ -186,7 +207,7 @@ function processTokenResponse(data) {
             console.log(`Token valid for ${Math.round(tokenTimeRemaining / 60000)} more minutes`);
         }
     } else {
-        // we are not logged in
-        redirectToSpotifyAuthorizeEndpoint()
+        // we are not logged in and have no usable refresh token
+        redirectToSpotifyAuthorizeEndpoint();
     }
 })();
