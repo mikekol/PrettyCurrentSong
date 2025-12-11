@@ -10,31 +10,43 @@ const redirect_uri = window.location.origin; // Your redirect uri
 console.log(`Redirect URI: ${redirect_uri}`);
 const scope = 'user-read-playback-state user-read-currently-playing'
 
-// Parse tokens from URL hash (for OBS compatibility)
+// Helper functions for URL hash-based token storage (OBS compatible)
 function getTokensFromHash() {
     const hash = window.location.hash.substring(1);
+    if (!hash) return { access_token: null, refresh_token: null, expires_at: null };
+
     const params = new URLSearchParams(hash);
+    const expires = params.get('expires_at');
     return {
         access_token: params.get('access_token') || null,
         refresh_token: params.get('refresh_token') || null,
-        expires_at: params.get('expires_at') || null
+        expires_at: expires ? parseInt(expires, 10) : null
     };
 }
 
-// Store tokens in URL hash
 function saveTokensToHash(access, refresh, expires) {
     const params = new URLSearchParams();
     if (access) params.set('access_token', access);
     if (refresh) params.set('refresh_token', refresh);
-    if (expires) params.set('expires_at', expires);
-    window.location.hash = params.toString();
+    if (expires) params.set('expires_at', expires.toString());
+    const hashString = params.toString();
+    console.log('Saving tokens to hash:', hashString.substring(0, 100) + '...');
+    window.location.hash = hashString;
+    console.log('Hash after setting:', window.location.hash.substring(0, 100));
 }
 
 // Restore tokens from URL hash
-let tokens = getTokensFromHash();
+const tokens = getTokensFromHash();
 let access_token = tokens.access_token;
 let refresh_token = tokens.refresh_token;
 let expires_at = tokens.expires_at;
+
+console.log('Initial token state:', {
+    hasAccessToken: !!access_token,
+    hasRefreshToken: !!refresh_token,
+    expiresAt: expires_at,
+    currentHash: window.location.hash
+});
 
 function generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -88,7 +100,9 @@ function redirectToSpotifyAuthorizeEndpoint() {
 }
 
 function exchangeToken(code) {
+    console.log('exchangeToken called with code:', code ? 'present' : 'missing');
     const code_verifier = sessionStorage.getItem('code_verifier');
+    console.log('code_verifier from sessionStorage:', code_verifier ? 'present' : 'missing');
 
     fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
@@ -105,19 +119,31 @@ function exchangeToken(code) {
     })
     .then(addThrowErrorToFetch)
     .then((data) => {
+        console.log('exchangeToken: Token exchange successful');
         processTokenResponse(data);
+        // clear search query params but keep hash
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
 
-            // clear search query params but keep hash
-            const newUrl = window.location.pathname + window.location.hash;
-            window.history.replaceState({}, document.title, newUrl);
-        })
-        .catch(handleError);
+        // Token exchange complete, now safe to start getSong
+        console.log('Starting getSong after successful token exchange');
+        if (typeof getSong === 'function') {
+            getSong();
+        }
+    })
+    .catch((error) => {
+        console.error('exchangeToken: Token exchange failed:', error);
+        handleError(error);
+    });
 }
 
 function refreshToken() {
-    const refresh_token = localStorage.getItem('refresh_token');
+    // Get refresh_token from URL hash
+    const tokens = getTokensFromHash();
+    const refresh_token_to_use = tokens.refresh_token;
+
     // Validate the refresh token exists and is not the literal string 'undefined' or 'null'
-    if (!refresh_token || refresh_token === 'undefined' || refresh_token === 'null') {
+    if (!refresh_token_to_use || refresh_token_to_use === 'undefined' || refresh_token_to_use === 'null') {
         // nothing we can do; force a full re-auth
         if (window.NODE_ENV !== 'production') {
             console.warn('refreshToken: no valid refresh_token found in storage, redirecting to authorize endpoint');
@@ -133,7 +159,7 @@ function refreshToken() {
         body: new URLSearchParams({
             client_id,
             grant_type: 'refresh_token',
-            refresh_token,
+            refresh_token: refresh_token_to_use,
         }),
     })
     .then(addThrowErrorToFetch)
@@ -142,16 +168,17 @@ function refreshToken() {
 }
 
 function handleError(error) {
+    console.error('handleError called:', error);
     if (window.NODE_ENV !== 'production') {
         console.error(error);
     }
 
     // If the request failed due to authorization (expired/invalid token), force re-auth
     const status = error && error.response && error.response.status;
+    console.log('Error status:', status);
     if (status === 400 || status === 401 || status === 403) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('expires_at');
+        // Clear tokens from URL hash
+        window.location.hash = '';
         redirectToSpotifyAuthorizeEndpoint();
     }
 }
@@ -165,22 +192,29 @@ async function addThrowErrorToFetch(response) {
 }
 
 function logout() {
-    sessionStorage.clear();
     window.location.hash = '';
+    sessionStorage.clear();
     window.location.reload();
 }
 
 function processTokenResponse(data) {
+    console.log('processTokenResponse called with data:', {
+        hasAccessToken: !!data.access_token,
+        hasRefreshToken: !!data.refresh_token,
+        expiresIn: data.expires_in
+    });
+
     access_token = data.access_token;
     // Only overwrite the stored refresh token if the response includes one.
     // When using the refresh_token grant, Spotify may not return a new refresh_token.
     if (data.refresh_token) {
         refresh_token = data.refresh_token;
-        localStorage.setItem('refresh_token', refresh_token);
     }
 
     const t = new Date();
     expires_at = t.setSeconds(t.getSeconds() + data.expires_in);
+
+    console.log('About to save tokens - access_token:', access_token ? 'present' : 'missing', 'refresh_token:', refresh_token ? 'present' : 'missing', 'expires_at:', expires_at);
 
     // Save tokens to URL hash for OBS persistence
     saveTokensToHash(access_token, refresh_token, expires_at);

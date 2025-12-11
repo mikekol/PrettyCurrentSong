@@ -169,10 +169,20 @@
                 if (window.NODE_ENV !== 'production') {
                     console.log('getSong: No access token - trying to recover.')
                 }
-                redirectToSpotifyAuthorizeEndpoint()
+                // Don't redirect here - let main.js handle the auth flow
             }
         }
-        getSong()
+
+        // Only start getSong if we're not in the middle of authorization
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+        if (!authCode) {
+            // No auth code in URL, safe to start polling
+            getSong();
+        } else {
+            // Auth code present, wait for token exchange to complete
+            console.log('Waiting for token exchange to complete...');
+        }
     </script>
 
 </html>
