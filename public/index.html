@@ -62,8 +62,8 @@
                 nowPlayingTemplate = Handlebars.compile(nowPlayingSource),
                 nowPlayingPlaceholder = document.getElementById('now-playing')
 
-            if (localStorage.getItem('access_token')) {
-                let tokenTimeRemaining = (localStorage.getItem('expires_at')) - Date.now()
+            if (access_token) {
+                let tokenTimeRemaining = expires_at - Date.now()
                 console.log(`getSong: token time ${tokenTimeRemaining}ms`)
 
                 if (tokenTimeRemaining <= TOKEN_TIME_THRESHOLD) {
@@ -74,7 +74,7 @@
                 $.ajax({
                     url: 'https://api.spotify.com/v1/me/player/currently-playing',
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+                        'Authorization': 'Bearer ' + access_token
                     },
                     success: function (response) {
                         //console.log(response)

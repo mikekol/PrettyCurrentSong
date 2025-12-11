@@ -10,10 +10,31 @@ const redirect_uri = window.location.origin; // Your redirect uri
 console.log(`Redirect URI: ${redirect_uri}`);
 const scope = 'user-read-playback-state user-read-currently-playing'
 
-// Restore tokens from localStorage
-let access_token = localStorage.getItem('access_token') || null;
-let refresh_token = localStorage.getItem('refresh_token') || null;
-let expires_at = localStorage.getItem('expires_at') || null;
+// Parse tokens from URL hash (for OBS compatibility)
+function getTokensFromHash() {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    return {
+        access_token: params.get('access_token') || null,
+        refresh_token: params.get('refresh_token') || null,
+        expires_at: params.get('expires_at') || null
+    };
+}
+
+// Store tokens in URL hash
+function saveTokensToHash(access, refresh, expires) {
+    const params = new URLSearchParams();
+    if (access) params.set('access_token', access);
+    if (refresh) params.set('refresh_token', refresh);
+    if (expires) params.set('expires_at', expires);
+    window.location.hash = params.toString();
+}
+
+// Restore tokens from URL hash
+let tokens = getTokensFromHash();
+let access_token = tokens.access_token;
+let refresh_token = tokens.refresh_token;
+let expires_at = tokens.expires_at;
 
 function generateRandomString(length) {
     let text = '';
@@ -49,7 +70,8 @@ function redirectToSpotifyAuthorizeEndpoint() {
     const codeVerifier = generateRandomString(64);
 
     generateCodeChallenge(codeVerifier).then((code_challenge) => {
-        window.localStorage.setItem('code_verifier', codeVerifier);
+        // Store code_verifier in sessionStorage (works within same browser session)
+        window.sessionStorage.setItem('code_verifier', codeVerifier);
         // Redirect to example:
         // GET https://accounts.spotify.com/authorize?response_type=code&client_id=77e602fc63fa4b96acff255ed33428d3&redirect_uri=http%3A%2F%2Flocalhost&scope=user-follow-modify&state=e21392da45dbf4&code_challenge=KADwyz1X~HIdcAG20lnXitK6k51xBP4pEMEZHmCneHD1JhrcHjE1P3yU_NjhBz4TdhV6acGo16PCd10xLwMJJ4uCutQZHw&code_challenge_method=S256
 
@@ -71,7 +93,7 @@ function redirectToSpotifyAuthorizeEndpoint() {
 }
 
 function exchangeToken(code) {
-    const code_verifier = localStorage.getItem('code_verifier');
+    const code_verifier = sessionStorage.getItem('code_verifier');
 
     fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
@@ -90,8 +112,9 @@ function exchangeToken(code) {
         .then((data) => {
             processTokenResponse(data);
 
-            // clear search query params in the url
-            window.history.replaceState({}, document.title, '/');
+            // clear search query params but keep hash
+            const newUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, document.title, newUrl);
         })
         .catch(handleError);
 }
@@ -126,7 +149,8 @@ async function addThrowErrorToFetch(response) {
 }
 
 function logout() {
-    localStorage.clear();
+    sessionStorage.clear();
+    window.location.hash = '';
     window.location.reload();
 }
 
@@ -137,9 +161,8 @@ function processTokenResponse(data) {
     const t = new Date();
     expires_at = t.setSeconds(t.getSeconds() + data.expires_in);
 
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('refresh_token', refresh_token);
-    localStorage.setItem('expires_at', expires_at);
+    // Save tokens to URL hash for OBS persistence
+    saveTokensToHash(access_token, refresh_token, expires_at);
 }
 
 
@@ -153,8 +176,15 @@ function processTokenResponse(data) {
         // we have received the code from spotify and will exchange it for a access_token
         exchangeToken(code);
     } else if (access_token && refresh_token && expires_at) {
-        // we are already authorized and reload our tokens from localStorage
-        // so we're pretty good here.
+        // we are already authorized and have tokens from URL hash
+        // check if token is expired or about to expire
+        const tokenTimeRemaining = expires_at - Date.now();
+        if (tokenTimeRemaining <= 0) {
+            console.log('Token expired, refreshing...');
+            refreshToken();
+        } else {
+            console.log(`Token valid for ${Math.round(tokenTimeRemaining / 60000)} more minutes`);
+        }
     } else {
         // we are not logged in
         redirectToSpotifyAuthorizeEndpoint()
