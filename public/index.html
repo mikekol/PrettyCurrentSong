@@ -35,6 +35,7 @@
             </div>
         </div>
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.11.1/src/sha256.min.js"></script>
     <script src="./main.js"></script>
     <script>
         const DEFAULT_DURATION = 10 * 1000
@@ -169,6 +170,16 @@
                 if (window.NODE_ENV !== 'production') {
                     console.log('getSong: No access token - trying to recover.')
                 }
+
+                const isExchangingToken = !!(window.pcsAuthState && window.pcsAuthState.exchangingToken)
+                if (isExchangingToken) {
+                    if (window.NODE_ENV !== 'production') {
+                        console.log('getSong: Token exchange in progress, waiting before retry.')
+                    }
+                    songIntervalId = window.setInterval(() => { getSong() }, 1000)
+                    return
+                }
+
                 redirectToSpotifyAuthorizeEndpoint()
             }
         }
