@@ -1,6 +1,7 @@
 services:
   pcs:
     build: .
+    image: pcs-app
     ports:
       - "${HOST_PORT:-8889}:80"
     restart: unless-stopped
