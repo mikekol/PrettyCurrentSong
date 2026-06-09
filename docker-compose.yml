@@ -1,0 +1,6 @@
+services:
+  pcs:
+    build: .
+    ports:
+      - "${HOST_PORT:-8889}:80"
+    restart: unless-stopped

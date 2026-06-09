@@ -1,0 +1,18 @@
+# Infrastructure NGINX snippet for routing /pcs/ to the PrettyCurrentSong container.
+#
+# The trailing slash on proxy_pass strips the /pcs/ prefix so the container
+# always receives requests at /, with no path awareness needed inside the image.
+#
+# Replace <HOST> with the hostname or IP where the container runs (e.g. localhost,
+# 127.0.0.1, or a LAN hostname) and <PORT> with the value of HOST_PORT from .env.
+#
+# Add the full redirect URI (e.g. https://pi5.local/pcs/) to your Spotify app
+# dashboard so the OAuth flow works when accessed via this path.
+
+location /pcs/ {
+    proxy_pass http://<HOST>:<PORT>/;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
