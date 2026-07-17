@@ -1,9 +1,12 @@
 
 // Heavily based on code from https://github.com/tobika/spotify-auth-PKCE-example
 
-// Your client id from your app in the spotify dashboard:
-// https://developer.spotify.com/dashboard/applications
-const client_id = `ec89600e478d4d8aa1a78e6a0a7e6097`;
+// Client id is injected at runtime via config.js (generated from the
+// SPOTIFY_CLIENT_ID environment variable - see README.md).
+const client_id = window.SPOTIFY_CLIENT_ID;
+if (!client_id) {
+    throw new Error('SPOTIFY_CLIENT_ID is not configured. See README.md for setup instructions.');
+}
 
 // Spotify requires an exact redirect URI match (including path and trailing slash).
 function getRedirectUri() {

@@ -10,13 +10,13 @@ PrettyCurrentSong is a static single-page web app that displays the currently pl
 
 **Local dev (Node)**
 ```bash
-npm install        # install http-server dependency
-npm start          # serve public/ at http://localhost:8889 (no cache)
+npm install                              # install http-server dependency
+SPOTIFY_CLIENT_ID=xxx npm start          # serve public/ at http://localhost:8889 (no cache)
 ```
 
 **Docker**
 ```bash
-cp .env.example .env          # once; set HOST_PORT if needed
+cp .env.example .env          # once; set HOST_PORT and SPOTIFY_CLIENT_ID
 docker compose up -d --build  # build image and start container
 docker compose down           # stop and remove container
 ```
@@ -54,7 +54,15 @@ On startup, `main.js` reads from both sources and writes back to the hash if the
 
 - Font sizes use `cqi` (container query inline) units. OBS's embedded Chromium (v103) does not support `cqi`; the README has CSS overrides for the OBS custom CSS field.
 - `window.isSecureContext` may be false when the page is loaded over plain HTTP from another machine. `generateCodeChallenge()` falls back to the `js-sha256` library (loaded from jsDelivr) when `SubtleCrypto` is unavailable.
-- Spotify rejects non-localhost HTTP redirect URIs. LAN access requires HTTPS (see README for the Caddy reverse-proxy setup).
+- Spotify rejects non-localhost HTTP redirect URIs. LAN access requires HTTPS (see README for reverse-proxy setup).
+
+## Client ID configuration
+
+`public/main.js` reads `window.SPOTIFY_CLIENT_ID`, which comes from a generated (not committed) `public/config.js` — it is not hardcoded in the repo:
+
+- **Docker**: [`docker-entrypoint.d/40-generate-config.sh`](docker-entrypoint.d/40-generate-config.sh) runs at container startup (nginx's stock entrypoint executes all scripts in `/docker-entrypoint.d/`) and renders [`config.js.template`](config.js.template) with `envsubst`, using the `SPOTIFY_CLIENT_ID` env var from `.env`/`docker-compose.yml`.
+- **Local dev**: the `prestart` npm script ([`scripts/generate-config.js`](scripts/generate-config.js)) writes `public/config.js` from the `SPOTIFY_CLIENT_ID` env var before `npm start` runs the static server. Fails fast with an error if the env var is unset.
+- `public/index.html` loads `config.js` before `main.js`. `public/config.js` is gitignored since it's generated per-environment.
 
 ## Docker / infrastructure proxy
 
@@ -62,10 +70,11 @@ On startup, `main.js` reads from both sources and writes back to the hash if the
 
 When accessed via the infrastructure proxy at `https://<host>/pcs/`, `getRedirectUri()` in `main.js` resolves to `https://<host>/pcs/` dynamically. That URI must be registered in the Spotify app dashboard.
 
-## Configuration
-
-The only thing that requires editing for a new user is `client_id` at the top of `public/main.js`. The redirect URI is computed dynamically from `window.location` at runtime — no hardcoded URL.
-
 ## Image publishing
 
-`.github/workflows/publish-image.yml` builds the Docker image and pushes it to GHCR (`ghcr.io/mikekol/prettycurrentsong`) on every push to `main`, tagged `latest` and with the commit SHA. Deployment machines (e.g. pi5) pull the image directly instead of building from source — see the consuming infra repo's compose file. The GHCR package needs to be public, or the deployment machine needs `docker login ghcr.io` with a PAT that has `read:packages`.
+`.github/workflows/publish-image.yml` builds the Docker image and pushes it to GHCR (`ghcr.io/mikekol/prettycurrentsong`) on every push to `main` (except pushes that only touch `version.json`). The workflow:
+
+1. Bumps the `build` field in [`version.json`](version.json) (major/minor/patch are edited manually), computes a semver string (`major.minor.patch+build`), syncs `package.json`'s `version` field (major.minor.patch only, since npm doesn't support build metadata), and commits/pushes that bump with `[skip ci]`.
+2. Builds and pushes a separate single-arch image per platform (amd64, arm64), tagged both `latest-{arch}` and `prettycurrentsong-{major.minor.patch-build}-{arch}` (docker tags can't contain `+`, so `-` is used in place of the semver build separator).
+
+Deployment machines (e.g. pi5) pull the image directly instead of building from source — see the consuming infra repo's compose file. The GHCR package needs to be public, or the deployment machine needs `docker login ghcr.io` with a PAT that has `read:packages`.

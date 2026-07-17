@@ -3,16 +3,65 @@ name: Publish image to GHCR
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - version.json
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
-  publish:
+  version:
     runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.bump.outputs.full }}
+      tag-safe: ${{ steps.bump.outputs.tag-safe }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump build number
+        id: bump
+        run: |
+          MAJOR=$(jq -r .major version.json)
+          MINOR=$(jq -r .minor version.json)
+          PATCH=$(jq -r .patch version.json)
+          BUILD=$(( $(jq -r .build version.json) + 1 ))
+
+          jq --argjson build "$BUILD" '.build = $build' version.json > version.json.tmp
+          mv version.json.tmp version.json
+
+          FULL="$MAJOR.$MINOR.$PATCH+$BUILD"
+          TAG_SAFE="$MAJOR.$MINOR.$PATCH-$BUILD"
+          echo "full=$FULL" >> "$GITHUB_OUTPUT"
+          echo "tag-safe=$TAG_SAFE" >> "$GITHUB_OUTPUT"
+
+          jq --arg v "$MAJOR.$MINOR.$PATCH" '.version = $v' package.json > package.json.tmp
+          mv package.json.tmp package.json
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.json package.json
+          git commit -m "chore: bump build number to ${{ steps.bump.outputs.tag-safe }} [skip ci]"
+          git push
+
+  publish:
+    needs: version
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+          - platform: linux/arm64
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -27,22 +76,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/prettycurrentsong
-          tags: |
-            type=raw,value=latest
-            type=sha
-          labels: |
-            org.opencontainers.image.description=OBS Browser Source overlay showing the currently playing Spotify track
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/prettycurrentsong:latest-${{ matrix.arch }}
+            ghcr.io/${{ github.repository_owner }}/prettycurrentsong:prettycurrentsong-${{ needs.version.outputs.tag-safe }}-${{ matrix.arch }}
+          labels: |
+            org.opencontainers.image.description=OBS Browser Source overlay showing the currently playing Spotify track
+            org.opencontainers.image.version=${{ needs.version.outputs.full }}

@@ -1,148 +1,68 @@
 # PrettyCurrentSong
 
-PrettyCurrentSong is a small, stylable web app that will display information about the current song playing on your Spotify player.
+PrettyCurrentSong is a small, stylable web app that displays information about the current song playing on your Spotify player. It's designed to be added as a Browser Source in OBS. There's no backend — it's a static site that talks to Spotify's API directly from the browser.
 
-To configure the application to work with your personal Spotify account:
+## 1. Create a Spotify app
 
-1. Change line 7 (or thereabouts) in main.js to your own Spotify client ID. To get your own ID, follow the Getting Started guide here: <https://developer.spotify.com/documentation/web-api/quick-start/> (up until Preparing Your Environments).
+1. Follow the Getting Started guide here: <https://developer.spotify.com/documentation/web-api/quick-start/> (up until "Preparing Your Environments") to create a Spotify app and get a client ID.
+2. In your Spotify app dashboard, add a redirect URI that matches exactly how you plan to access the site (scheme, host, port, path, and trailing slash all must match):
+    - Local machine: `http://localhost:8889/` and/or `http://127.0.0.1:8889/`
+    - LAN hostname: e.g. `http://pi5.local:8889/`
+    - Behind a reverse proxy sub-path: e.g. `https://your-host/pcs/`
 
-2. In your Spotify app dashboard, set the redirect URI to match how you plan to access the site:
-    - If using `localhost`: `http://localhost:8889/`
-    - If using `127.0.0.1`: `http://127.0.0.1:8889/`
-    - If using a LAN hostname (for example `http://pi5.local:8889/`), add that exact URI too
-   - You can add multiple redirect URIs to support both
+    Spotify requires HTTPS for any non-`localhost` redirect URI — plain HTTP on a LAN hostname or IP (other than `localhost`/`127.0.0.1`) is rejected. If you need LAN/remote access, put the app behind a reverse proxy that terminates TLS (see [Running behind a reverse proxy](#running-behind-a-reverse-proxy)).
 
-    Spotify requires an exact match (scheme, host, port, path, and trailing slash).
-    Spotify also requires non-localhost redirect URIs to use HTTPS. Plain HTTP on LAN/IP addresses (for example `http://10.0.0.95:8889/`) is rejected as insecure.
+3. Note your client ID — you'll pass it in as the `SPOTIFY_CLIENT_ID` environment variable in the next step. The redirect URI itself is computed dynamically from `window.location` at runtime — nothing to hardcode.
 
-    Note: if the page is loaded from another machine over plain HTTP, some browsers disable `crypto.subtle` (secure-context only). This app includes a JavaScript SHA-256 fallback (from the `js-sha256` npm package, loaded via jsDelivr) so PKCE `S256` still works in that scenario. For stronger security, serve the page over HTTPS so native WebCrypto can be used.
+## 2. Run it
 
-3. Use the `run_pcs.cmd` or `run_pcs.sh` scripts (Windows and Mac/Linux, respectively) to launch the server.
+### Option A: Docker (recommended)
 
-4. Launch Spotify and start playing something.
+```bash
+cp .env.example .env    # once; set HOST_PORT and SPOTIFY_CLIENT_ID
+docker compose up -d --build
+```
 
-5. Add a Browser Source to your OBS scene, and set the URL to `http://localhost:8889` (or `http://127.0.0.1:8889` if you prefer).
-I use a height of 90 and a width of 700, but you do you.  I recommend checking "Shutdown source when not visible" and "Refresh browser when scene becomes active". Initially, you may want to set the height to be bigger because of the next step.
+This builds an `nginx:alpine` image serving `public/` and exposes it on `HOST_PORT` (default `8889`). At container startup, an entrypoint script generates `public/config.js` from the `SPOTIFY_CLIENT_ID` environment variable, so the client ID never needs to be baked into the image. Changes to `public/` require a rebuild:
 
-6. Once you add it (and have the server running!), click the Interact button in OBS. This should open the app in an interactive window, and it should prompt you to sign into Spotify, and authorize the application to access your account. You are only giving the application the permission to read about your current player, and what media it's playing - it is read-only: this app does not and cannot modify any of your account information.
+```bash
+docker compose up -d --build
+```
 
-7. Once you're logged in, you should see the currently playing song.  Resize the control however you want now.
+To stop it:
 
-Auth state is persisted in browser `localStorage` so opening the page again in the same browser profile should not require a full re-authorization unless the refresh token becomes invalid or is cleared.
+```bash
+docker compose down
+```
 
-The refresh rate is set to 10 seconds, so there could be up to a 10-second delay in picking up a song change or pause/play state change.
-
-## Setup From Scratch (Raspberry Pi + Ubuntu)
-
-If you are rebuilding this on a new machine, use this checklist.
-
-### A) Local-only quick start (no HTTPS)
-
-1. Install Node.js and npm.
-2. From the project root, install dependencies:
+### Option B: Node (local dev)
 
 ```bash
 npm install
+SPOTIFY_CLIENT_ID=your_spotify_client_id npm start
 ```
 
-3. Start the app server:
+This serves `public/` at `http://localhost:8889` with caching disabled, so changes are visible on refresh with no rebuild step. A `prestart` script regenerates `public/config.js` from `SPOTIFY_CLIENT_ID` each time you run `npm start`.
 
-```bash
-npm start
-```
+## 3. Add it to OBS
 
-4. Open in a browser on the same machine:
+1. Launch Spotify and start playing something.
+2. Add a Browser Source to your OBS scene, and set the URL to `http://localhost:8889` (or `http://127.0.0.1:8889`).
+   I use a height of 90 and a width of 700, but you do you. I recommend checking "Shutdown source when not visible" and "Refresh browser when scene becomes active". Initially, you may want to set the height to be bigger because of the next step.
+3. With the server running, click the Interact button in OBS. This opens the app in an interactive window and prompts you to sign into Spotify and authorize the app. You're only granting read access to your current playback state — this app does not and cannot modify your account.
+4. Once you're logged in, you should see the currently playing song. Resize the control however you want now.
 
-```text
-http://localhost:8889/
-```
+Auth state is persisted in browser `localStorage` **and** in the page's URL hash, so reopening the page (including OBS reloading the Browser Source, which resets `localStorage` but keeps the URL) should not require a full re-authorization unless the refresh token becomes invalid or is cleared.
 
-5. In Spotify app settings, include:
-    - `http://localhost:8889/`
-    - `http://127.0.0.1:8889/`
+The refresh rate is 10 seconds (polled sooner when a song is near its end), so there could be up to a 10-second delay in picking up a song change or pause/play state change.
 
-### B) LAN access with HTTPS via Caddy (recommended)
+## Running behind a reverse proxy
 
-Spotify rejects non-localhost HTTP redirect URIs. For LAN hostnames/IPs, use HTTPS.
+Spotify requires HTTPS for anything other than `localhost`/`127.0.0.1`. If you want to reach the app over a LAN hostname or from another machine, put it behind a reverse proxy on infrastructure you already have HTTPS configured for, and forward to the container's `HOST_PORT`.
 
-1. Install and run the app server (upstream HTTP):
+[`nginx-proxy.conf.example`](nginx-proxy.conf.example) is a drop-in NGINX `location` block for serving the app at a sub-path (e.g. `https://your-host/pcs/`). The trailing slash on `proxy_pass` strips the `/pcs/` prefix, so the container always sees requests at `/` and needs no sub-path awareness. Replace `<HOST>` and `<PORT>` with where the container is running, then register the full URL (e.g. `https://your-host/pcs/`) as a redirect URI in your Spotify app dashboard.
 
-```bash
-npm install
-npx http-server public -p 8889 -a 127.0.0.1 -c-1
-```
-
-2. Install Caddy:
-
-```bash
-sudo apt update
-sudo apt install -y caddy
-```
-
-3. Configure Caddy at `/etc/caddy/Caddyfile`:
-
-```caddy
-pi5.local {
-     reverse_proxy 127.0.0.1:8889
-     tls internal
-}
-```
-
-4. Reload Caddy:
-
-```bash
-sudo caddy validate --config /etc/caddy/Caddyfile
-sudo systemctl reload caddy
-sudo systemctl status caddy
-```
-
-5. In Spotify app settings, include:
-    - `https://pi5.local/`
-
-6. Import Caddy local root cert on client devices:
-    - Cert path on Pi: `/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt`
-    - On Windows, import into `Trusted Root Certification Authorities`
-
-### C) Copy cert from Pi to Windows quickly
-
-From Windows PowerShell:
-
-```powershell
-scp pi@pi5.local:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt $env:USERPROFILE\Downloads\root.crt
-```
-
-Then import `root.crt` into the Windows trusted root store.
-
-### D) One-minute troubleshooting
-
-1. Verify app upstream is running:
-
-```bash
-curl -I http://127.0.0.1:8889/
-```
-
-2. Verify HTTPS endpoint on Pi:
-
-```bash
-curl -k -I https://pi5.local/
-```
-
-3. Verify listeners:
-
-```bash
-ss -ltnp | grep -E '(:443|:8889)'
-```
-
-4. Watch Caddy logs live:
-
-```bash
-sudo journalctl -u caddy -f
-```
-
-5. If auth loops:
-    - Clear site storage for the app origin.
-    - Confirm Spotify redirect URI is an exact match (including trailing slash).
-    - Re-open the exact configured URL (for example `https://pi5.local/`).
+If you don't already have a reverse proxy with HTTPS set up, any TLS-terminating proxy (Caddy, Traefik, nginx with certbot, a cloud load balancer, etc.) in front of the container will work — this repo doesn't prescribe one.
 
 ## Something doesn't look quite right
 

@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "prestart": "node scripts/generate-config.js",
     "start": "http-server public/ --port 8889 -c-1"
   },
   "repository": {

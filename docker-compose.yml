@@ -4,4 +4,6 @@ services:
     image: pcs-app
     ports:
       - "${HOST_PORT:-8889}:80"
+    environment:
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID:?SPOTIFY_CLIENT_ID must be set in .env}
     restart: unless-stopped
