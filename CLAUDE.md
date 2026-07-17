@@ -65,3 +65,7 @@ When accessed via the infrastructure proxy at `https://<host>/pcs/`, `getRedirec
 ## Configuration
 
 The only thing that requires editing for a new user is `client_id` at the top of `public/main.js`. The redirect URI is computed dynamically from `window.location` at runtime — no hardcoded URL.
+
+## Image publishing
+
+`.github/workflows/publish-image.yml` builds the Docker image and pushes it to GHCR (`ghcr.io/mikekol/prettycurrentsong`) on every push to `main`, tagged `latest` and with the commit SHA. Deployment machines (e.g. pi5) pull the image directly instead of building from source — see the consuming infra repo's compose file. The GHCR package needs to be public, or the deployment machine needs `docker login ghcr.io` with a PAT that has `read:packages`.
