@@ -40,20 +40,18 @@
     <script src="./main.js"></script>
     <script>
         const DEFAULT_DURATION = 10 * 1000
-        const TOKEN_TIME_THRESHOLD = 30 * 60 * 1000
         const CHANNEL_LOGO = './logo.png'
 
         let durationModifierInMs = 1000
         let duration = DEFAULT_DURATION
         let songIntervalId = undefined
-        let tokenIntervalId = undefined
 
         let lastSongTitle = undefined
         let lastSongBigImage = CHANNEL_LOGO
         let lastSongSmallImage = CHANNEL_LOGO
 
-        function getSong() {
-            if (!!songIntervalId) {
+        async function getSong() {
+            if (songIntervalId) {
                 if (window.NODE_ENV !== 'production') {
                     console.log('getSong: Cleaning up interval...')
                 }
@@ -64,125 +62,103 @@
                 console.log('getSong: Getting the song')
             }
 
+            let token
+            try {
+                token = await window.spotifyAuth.getValidAccessToken()
+            } catch (err) {
+                console.error('getSong: Failed to get access token', err)
+                songIntervalId = window.setInterval(getSong, duration)
+                return
+            }
+
+            if (!token) {
+                // Auth redirect is in progress; retry shortly.
+                songIntervalId = window.setInterval(getSong, 1000)
+                return
+            }
+
             let nowPlayingSource = document.getElementById('now-playing-template').innerHTML,
                 nowPlayingTemplate = Handlebars.compile(nowPlayingSource),
                 nowPlayingPlaceholder = document.getElementById('now-playing')
 
-            if (access_token) {
-                let tokenTimeRemaining = expires_at - Date.now()
-                console.log(`getSong: token time ${tokenTimeRemaining}ms`)
-
-                if (tokenTimeRemaining <= TOKEN_TIME_THRESHOLD) {
+            $.ajax({
+                url: 'https://api.spotify.com/v1/me/player/currently-playing',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function (response) {
                     if (window.NODE_ENV !== 'production') {
-                        console.log(`getSong: Refreshing token...`)
+                        console.log(response)
                     }
-                    refreshToken()
-                }
-
-                $.ajax({
-                    url: 'https://api.spotify.com/v1/me/player/currently-playing',
-                    headers: {
-                        'Authorization': 'Bearer ' + access_token
-                    },
-                    success: function (response) {
-                        if (window.NODE_ENV !== 'production') {
-                            console.log(response)
-                        }
-                        if (!!response && !!response.is_playing) {
-                            if (response.item.album.images.length === 0) {
-                                if (window.NODE_ENV !== 'production') {
-                                    console.log(`getSong: No images for the song. Using the channel logo.`)
-                                }
-                                response.item.album.images[1] = { url: CHANNEL_LOGO }
-                                response.item.album.images[2] = { url: CHANNEL_LOGO }
-                            }
-                            // $('#backgroundArt').attr('src', lastSongBigImage)
-                            // $('#art').attr('src', lastSongSmallImage)
-                            $('#now-playing').show()
-                            // $('#backgroundArt').attr('src', response.item.album.images[1].url)
-                            // $('#art').attr('src', response.item.album.images[2].url)
-                            jQuery('#now-playing').removeClass('fadeOut').addClass('fadeIn')
-                            // Get the artist names if there are multiple.
-                            let artists = ''
-                            for (let i = 0; i < response.item.artists.length; i++) {
-                                if (response.item.artists.length > 1) {
-                                    artists = `${artists}, ${response.item.artists[i].name}`
-                                } else {
-                                    artists = `, ${response.item.artists[i].name}`
-                                }
-                            }
-                            // We always start with a comma and a space, so we slice it off.
-                            response.artists = artists.slice(2)
-
-                            let msLeft = (response.item.duration_ms - response.progress_ms)
-                            duration = (msLeft > DEFAULT_DURATION) ? DEFAULT_DURATION : msLeft + durationModifierInMs
+                    if (!!response && !!response.is_playing) {
+                        if (response.item.album.images.length === 0) {
                             if (window.NODE_ENV !== 'production') {
-                                console.log(`getSong: Looks like it's going to be ${msLeft}ms until the song changes`)
+                                console.log(`getSong: No images for the song. Using the channel logo.`)
                             }
-
-                            if (response.item.name != lastSongTitle) {
-                                if (window.NODE_ENV !== 'production') {
-                                    console.log(`getSong: Refreshing template...`)
-                                }
-                                nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
-                                lastSongTitle = response.item.name
-                                lastSongBigImage = response.item.album.images[1].url
-                                lastSongSmallImage = response.item.album.images[2].url
+                            response.item.album.images[1] = { url: CHANNEL_LOGO }
+                            response.item.album.images[2] = { url: CHANNEL_LOGO }
+                        }
+                        $('#now-playing').show()
+                        jQuery('#now-playing').removeClass('fadeOut').addClass('fadeIn')
+                        // Get the artist names if there are multiple.
+                        let artists = ''
+                        for (let i = 0; i < response.item.artists.length; i++) {
+                            if (response.item.artists.length > 1) {
+                                artists = `${artists}, ${response.item.artists[i].name}`
                             } else {
-                                if (window.NODE_ENV !== 'production') {
-                                    console.log(`getSong: Skipping refresh...`)
-                                }
+                                artists = `, ${response.item.artists[i].name}`
                             }
-
-                            songIntervalId = window.setInterval(() => { getSong() }, duration)
-                        } else {
-                            // what do we do here?
-                            jQuery('#now-playing').removeClass('fadeIn').addClass('fadeOut')
-                            songIntervalId = window.setInterval(() => { $('#now-playing').hide() }, 1000)
-                            window.clearInterval(songIntervalId)
-
-                            if (window.NODE_ENV !== 'production') {
-                                console.log(`getSong: Nothing is playing, or the player is offline. Checking again in ${duration}ms.`)
-                            }
-                            songIntervalId = window.setInterval(() => { getSong() }, duration)
                         }
-                    },
-                    error: function (textStatus, errorThrown) {
-                        let errorMsg = `getSong: Error: ${textStatus.statusText}\r\n${errorThrown}`;
+                        // We always start with a comma and a space, so we slice it off.
+                        response.artists = artists.slice(2)
+
+                        let msLeft = (response.item.duration_ms - response.progress_ms)
+                        duration = (msLeft > DEFAULT_DURATION) ? DEFAULT_DURATION : msLeft + durationModifierInMs
                         if (window.NODE_ENV !== 'production') {
-                            console.error(errorMsg);
+                            console.log(`getSong: Looks like it's going to be ${msLeft}ms until the song changes`)
                         }
-                        // If unauthorized, try to re-authenticate
-                        if (textStatus.status === 401 || (errorThrown && errorThrown.error && errorThrown.error.message === 'The access token expired')) {
-                            localStorage.removeItem('access_token');
-                            localStorage.removeItem('refresh_token');
-                            localStorage.removeItem('expires_at');
-                            redirectToSpotifyAuthorizeEndpoint();
+
+                        if (response.item.name != lastSongTitle) {
+                            if (window.NODE_ENV !== 'production') {
+                                console.log(`getSong: Refreshing template...`)
+                            }
+                            nowPlayingPlaceholder.innerHTML = nowPlayingTemplate(response)
+                            lastSongTitle = response.item.name
+                            lastSongBigImage = response.item.album.images[1].url
+                            lastSongSmallImage = response.item.album.images[2].url
                         } else {
-                            // Optionally show a user-friendly error message in the UI
-                            const nowPlayingPlaceholder = document.getElementById('now-playing');
-                            if (nowPlayingPlaceholder) {
-                                nowPlayingPlaceholder.innerHTML = '<div class="alert alert-danger">An error occurred while fetching the song. Please try again.</div>';
+                            if (window.NODE_ENV !== 'production') {
+                                console.log(`getSong: Skipping refresh...`)
                             }
                         }
-                    }
-                });
-            } else {
-                if (window.NODE_ENV !== 'production') {
-                    console.log('getSong: No access token - trying to recover.')
-                }
 
-                const isExchangingToken = !!(window.pcsAuthState && window.pcsAuthState.exchangingToken)
-                if (isExchangingToken) {
+                        songIntervalId = window.setInterval(getSong, duration)
+                    } else {
+                        jQuery('#now-playing').removeClass('fadeIn').addClass('fadeOut')
+                        songIntervalId = window.setInterval(() => { $('#now-playing').hide() }, 1000)
+                        window.clearInterval(songIntervalId)
+
+                        if (window.NODE_ENV !== 'production') {
+                            console.log(`getSong: Nothing is playing, or the player is offline. Checking again in ${duration}ms.`)
+                        }
+                        songIntervalId = window.setInterval(getSong, duration)
+                    }
+                },
+                error: function (textStatus, errorThrown) {
+                    let errorMsg = `getSong: Error: ${textStatus.statusText}\r\n${errorThrown}`;
                     if (window.NODE_ENV !== 'production') {
-                        console.log('getSong: Token exchange in progress, waiting before retry.')
+                        console.error(errorMsg);
                     }
-                    songIntervalId = window.setInterval(() => { getSong() }, 1000)
-                    return
+                    if (textStatus.status === 401 || (errorThrown && errorThrown.error && errorThrown.error.message === 'The access token expired')) {
+                        window.spotifyAuth.logout();
+                    } else {
+                        const nowPlayingPlaceholder = document.getElementById('now-playing');
+                        if (nowPlayingPlaceholder) {
+                            nowPlayingPlaceholder.innerHTML = '<div class="alert alert-danger">An error occurred while fetching the song. Please try again.</div>';
+                        }
+                    }
                 }
-
-                redirectToSpotifyAuthorizeEndpoint()
-            }
+            });
         }
         getSong()
     </script>
